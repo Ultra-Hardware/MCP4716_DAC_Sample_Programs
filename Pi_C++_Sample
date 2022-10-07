@@ -1,0 +1,68 @@
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <linux/i2c-dev.h>
+#include<sys/ioctl.h>
+
+//--------------------------
+
+
+int fd;
+int mcp4716_address = 0x63;
+int16_t val;
+uint8_t writeBuf[3];
+float myfloat;
+
+//---------------------------
+
+int main()   {
+
+  // i2c channel setup
+  if ((fd = open("/dev/i2c-1", O_RDWR)) < 0) {
+    printf("FAILED!!! %d\n", fd);
+    exit (1);
+  }
+
+  // CONNECTING TO THE DEVICE
+  if (ioctl(fd, I2C_SLAVE, mcp4716_address) < 0) {
+    printf("DEVICE NOT FOUND!!!\n");
+    exit (1);
+  }
+
+
+
+  // WRITING TO THE DAC REGISTER CONTROL BYTES
+  writeBuf[0] = 0b01000000;
+
+   // DATA REGISTERS BYTES
+  writeBuf[1] = 0b00000000;
+  writeBuf[2] = 0b00000000;
+
+  char buffer [15];
+  // 12-bit DAC
+  printf ("Enter a number 0-4095: ");
+  scanf("%s", buffer);
+  // TYPE CASTING : string to int
+  val = atoi(buffer);
+  printf("You entered %d  ", val);
+
+//--------------------------
+
+  // WRITING DATA TO THE DAC CHIP
+  writeBuf[1] = val >> 4;
+  writeBuf[2] = val << 4;
+
+  if (write(fd, writeBuf, 3) != 3) {
+    perror("ERROR FAILED TO WRITE!!!");
+    exit (1);
+  }
+
+  close(fd);
+  return 0;
+
+}
